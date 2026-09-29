@@ -1,0 +1,74 @@
+.idea/
+# Maven build output
+target/
+
+# Compiled Java files
+*.class
+
+# Maven
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+.mvn/timing.properties
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# VS Code
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Local configuration
+application-local.yml
+application-local.yaml
+application-local.properties
+
+# Local AI / model files
+*.gguf
+*.safetensors
+models/
+
+# Test / coverage output
+coverage/
+*.exec
+
+# Generated files
+generated/
+
+# Local workspace used by experiments
+workspace/
+
+# Backup files
+*.bak
+*.backup
