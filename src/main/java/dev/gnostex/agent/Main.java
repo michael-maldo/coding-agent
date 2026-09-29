@@ -15,6 +15,12 @@ public class Main {
                         )
                 );
 
+        AgentInstructions instructionLoader =
+            new AgentInstructions(workspace);
+
+        String repositoryInstructions =
+            instructionLoader.load();
+
         ToolRegistry tools =
                 new ToolRegistry();
 
@@ -40,7 +46,8 @@ public class Main {
         CodingAgent agent =
                 new CodingAgent(
                         ollama,
-                        tools
+                        tools,
+                        repositoryInstructions
                 );
 
         String answer =
