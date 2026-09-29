@@ -1,0 +1,6 @@
+/home/gnostex/Projects/03022026/coding-agent/src/test/java/dev/gnostex/agent/GitDiffToolTest.java
+/home/gnostex/Projects/03022026/coding-agent/src/test/java/dev/gnostex/agent/ReadFileToolTest.java
+/home/gnostex/Projects/03022026/coding-agent/src/test/java/dev/gnostex/agent/ReplaceTextToolTest.java
+/home/gnostex/Projects/03022026/coding-agent/src/test/java/dev/gnostex/agent/SearchCodeToolTest.java
+/home/gnostex/Projects/03022026/coding-agent/src/test/java/dev/gnostex/agent/ToolRegistryTest.java
+/home/gnostex/Projects/03022026/coding-agent/src/test/java/dev/gnostex/agent/WorkspaceTest.java
