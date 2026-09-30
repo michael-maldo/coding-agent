@@ -69,7 +69,19 @@ public class OllamaClient {
                         request,
                         HttpResponse.BodyHandlers
                                 .ofString()
+
                 );
+
+if (response.statusCode() < 200
+        || response.statusCode() >= 300) {
+
+    throw new IOException(
+            "Ollama request failed with HTTP "
+                    + response.statusCode()
+                    + ":\n"
+                    + response.body()
+    );
+}
 
         JsonNode root =
                 objectMapper.readTree(
@@ -101,7 +113,7 @@ public class OllamaClient {
         /*
          * Tool #1
          *
-         * Read a file when the path is already known.
+         * Read a file when its exact path is known.
          */
         Map<String, Object> readFileTool =
                 Map.of(
@@ -156,7 +168,7 @@ public class OllamaClient {
                                 "search_code",
 
                                 "description",
-                                "Search project source code for a class, method, symbol, or text.",
+                                "Search project source code for an exact class name, method name, symbol, or text. Prefer short literal identifiers such as Calculator or subtract rather than descriptive phrases.",
 
                                 "parameters",
                                 Map.of(
@@ -171,7 +183,7 @@ public class OllamaClient {
                                                         "string",
 
                                                         "description",
-                                                        "Text or symbol to search for"
+                                                        "Short literal text or symbol to search for, such as Calculator or subtract"
                                                 )
                                         ),
 
@@ -298,12 +310,10 @@ public class OllamaClient {
 
 
         /*
-         * Build Ollama request.
+         * Build the Ollama chat request.
          *
-         * IMPORTANT:
-         *
-         * This is the ONE tool list used by the
-         * current CodingAgent architecture.
+         * These are the tools currently exposed
+         * to the model.
          */
         Map<String, Object> requestBody =
                 Map.of(
@@ -354,22 +364,171 @@ public class OllamaClient {
                 );
 
 
+        /*
+         * Reject HTTP failures before attempting
+         * to interpret the response as an agent
+         * message.
+         */
+        if (response.statusCode() < 200
+                || response.statusCode() >= 300) {
+
+            throw new IOException(
+                    "Ollama request failed with HTTP "
+                            + response.statusCode()
+                            + ":\n"
+                            + response.body()
+            );
+        }
+
+
         JsonNode root =
                 objectMapper.readTree(
                         response.body()
                 );
 
 
+        JsonNode message =
+                root.path(
+                        "message"
+                );
+
+
         String content =
-                root.path("message")
-                        .path("content")
-                        .asText();
+                message.path(
+                        "content"
+                )
+                .asText();
 
 
         /*
-         * Qwen 2.5 Coder 7B is currently returning
-         * its requested tool as JSON inside the
-         * ordinary message content.
+         * Preferred tool-call mechanism:
+         *
+         * Ollama native structured tool calling.
+         *
+         * A response may contain:
+         *
+         * message.tool_calls[]
+         *
+         * with:
+         *
+         * function.name
+         * function.arguments
+         */
+        JsonNode toolCalls =
+                message.path(
+                        "tool_calls"
+                );
+
+
+        if (toolCalls.isArray()
+                && !toolCalls.isEmpty()) {
+
+            /*
+             * Our current CodingAgent executes one
+             * tool at a time.
+             *
+             * Therefore process the first requested
+             * tool call.
+             */
+            JsonNode firstToolCall =
+                    toolCalls.get(0);
+
+
+            JsonNode function =
+                    firstToolCall.path(
+                            "function"
+                    );
+
+
+            String toolName =
+                    function.path(
+                            "name"
+                    )
+                    .asText();
+
+
+            JsonNode arguments =
+                    function.path(
+                            "arguments"
+                    );
+
+
+            if (!toolName.isBlank()) {
+
+                /*
+                 * Normally arguments should be a JSON
+                 * object.
+                 *
+                 * Some model/runtime combinations may
+                 * return JSON encoded inside a string,
+                 * so support that representation too.
+                 */
+                if (arguments.isTextual()) {
+
+                    String argumentText =
+                            arguments.asText();
+
+                    if (argumentText.isBlank()) {
+
+                        arguments =
+                                objectMapper
+                                        .createObjectNode();
+
+                    } else {
+
+                        arguments =
+                                objectMapper.readTree(
+                                        argumentText
+                                );
+                    }
+                }
+
+
+                /*
+                 * A no-argument tool such as git_diff
+                 * should receive an empty object.
+                 */
+                if (arguments.isMissingNode()
+                        || arguments.isNull()) {
+
+                    arguments =
+                            objectMapper
+                                    .createObjectNode();
+                }
+
+
+                if (!arguments.isObject()) {
+
+                    throw new IOException(
+                            "Invalid arguments for tool "
+                                    + toolName
+                                    + ": "
+                                    + arguments
+                    );
+                }
+
+
+                ToolCall toolCall =
+                        new ToolCall(
+                                toolName,
+                                arguments
+                        );
+
+
+                return new AgentResponse(
+                        content,
+                        toolCall
+                );
+            }
+        }
+
+
+        /*
+         * Compatibility fallback.
+         *
+         * During the earlier version of the coding
+         * agent, Qwen returned tool requests as JSON
+         * inside ordinary message.content.
          *
          * Example:
          *
@@ -380,52 +539,72 @@ public class OllamaClient {
          *   }
          * }
          *
-         * Try to interpret the response as a
-         * ToolCall.
-         *
-         * If it isn't one, treat the response as
-         * the model's final answer.
+         * Keep supporting this representation for
+         * now while native tool calling is tested.
          */
-        try {
+        if (!content.isBlank()) {
 
-            JsonNode toolJson =
-                    objectMapper.readTree(
-                            content
-                    );
+            try {
 
-            if (toolJson.has("name")
-                    && toolJson.has("arguments")) {
-
-                ToolCall toolCall =
-                        new ToolCall(
-                                toolJson.path("name")
-                                        .asText(),
-
-                                toolJson.path(
-                                        "arguments"
-                                )
+                JsonNode toolJson =
+                        objectMapper.readTree(
+                                content
                         );
 
-                return new AgentResponse(
-                        content,
-                        toolCall
-                );
+
+                if (toolJson.isObject()
+                        && toolJson.has("name")
+                        && toolJson.has(
+                                "arguments"
+                        )) {
+
+                    String toolName =
+                            toolJson.path(
+                                    "name"
+                            )
+                            .asText();
+
+
+                    JsonNode arguments =
+                            toolJson.path(
+                                    "arguments"
+                            );
+
+
+                    if (!toolName.isBlank()
+                            && arguments.isObject()) {
+
+                        ToolCall toolCall =
+                                new ToolCall(
+                                        toolName,
+                                        arguments
+                                );
+
+
+                        return new AgentResponse(
+                                content,
+                                toolCall
+                        );
+                    }
+                }
+
+            } catch (Exception ignored) {
+
+                /*
+                 * message.content is ordinary text,
+                 * not our legacy JSON tool-call
+                 * representation.
+                 */
             }
-
-        } catch (Exception ignored) {
-
-            /*
-             * Normal text response.
-             *
-             * It is not JSON representing a tool call.
-             */
         }
 
 
         /*
-         * No tool request.
+         * No native structured tool call and no
+         * legacy JSON tool call.
          *
-         * Therefore this is the agent's final answer.
+         * Therefore treat message.content as the
+         * model's final response.
          */
         return new AgentResponse(
                 content,

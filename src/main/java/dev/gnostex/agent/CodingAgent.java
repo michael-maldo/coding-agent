@@ -41,6 +41,12 @@ public class CodingAgent {
                 You have tools that allow you to inspect and modify
                 the repository.
 
+                When a tool is needed, use the provided tool-calling
+                interface.
+
+                Do not write tool names, tool arguments, or simulated
+                tool calls as ordinary response text.
+
                 AVAILABLE TOOLS
 
                 search_code:
@@ -74,9 +80,14 @@ public class CodingAgent {
                 git_diff:
                 Shows the current Git diff.
 
-                Use this after modifying source code so that you can
-                inspect and verify the actual changes before claiming
-                that the task is complete.
+                Use this after YOU have modified source code during
+                the current user request so that you can inspect and
+                verify the actual changes before claiming that the
+                modification is complete.
+
+                Do not use git_diff for read-only questions unless
+                the user specifically asks to inspect existing
+                uncommitted changes.
 
 
                 RULES
@@ -133,7 +144,7 @@ public class CodingAgent {
 
                 9. When you have enough evidence to answer a
                    read-only request, answer normally instead of
-                   requesting another tool.
+                   using another tool.
 
                 10. When the user asks you to modify existing code,
                     do not merely show the user what the modified
@@ -149,31 +160,27 @@ public class CodingAgent {
                 12. Make the smallest appropriate source-code
                     replacement needed to satisfy the request.
 
-                13. After every successful source-code modification,
-                    use git_diff before claiming that the task is
-                    complete.
+                13. After every successful source-code modification
+                    made during the CURRENT user request, use
+                    git_diff before claiming that the modification
+                    is complete.
 
-                14. Inspect the Git diff and verify that the actual
-                    change matches the user's original request.
+                14. For read-only requests, do not use git_diff
+                    merely to verify the repository.
 
-                15. If replace_text fails, do not claim that the
+                    Use git_diff for a read-only request only when
+                    the user specifically asks about existing
+                    uncommitted changes or the current Git diff.
+
+                15. After modifying source code, inspect the Git
+                    diff and verify that the actual change matches
+                    the user's original request.
+
+                16. If replace_text fails, do not claim that the
                     modification succeeded.
 
                     Read the file again if necessary and reconsider
                     the exact old_text and new_text values.
-
-                16. A tool request must always contain both:
-
-                    "name"
-                    and
-                    "arguments"
-
-                    Even tools that require no arguments must use
-                    an empty arguments object.
-
-                    Correct example:
-
-                    {"name":"git_diff","arguments":{}}
 
                 17. When the user asks you to change the repository,
                     do not give the user instructions telling them
@@ -193,7 +200,19 @@ public class CodingAgent {
                     -> inspect the diff
                     -> final answer
 
-                19. Do not claim that a requested code modification
+                19. For a read-only task, a typical workflow should
+                    be:
+
+                    search_code
+                    -> locate relevant file
+                    -> read_file
+                    -> understand the code
+                    -> final answer
+
+                    Do not perform modification or verification tools
+                    that are unnecessary for the user's question.
+
+                20. Do not claim that a requested code modification
                     is complete unless replace_text confirmed the
                     modification and git_diff was inspected afterward.
 
@@ -270,7 +289,7 @@ public class CodingAgent {
          * Each iteration gives the LLM another
          * opportunity to:
          *
-         * - request a tool
+         * - use a tool
          * - inspect a previous tool result
          * - modify code
          * - inspect modifications
@@ -293,8 +312,8 @@ public class CodingAgent {
 
 
             /*
-             * If there is no tool call, Qwen believes
-             * it has enough information to answer.
+             * No tool call means Qwen believes it has
+             * enough information to answer.
              */
             if (!response.hasToolCall()) {
 
@@ -316,8 +335,11 @@ public class CodingAgent {
 
 
             /*
-             * Preserve Qwen's tool decision in the
+             * Preserve the assistant response in the
              * conversation history.
+             *
+             * OllamaClient has already converted a
+             * native Ollama tool call into ToolCall.
              */
             messages.add(
                     new ChatMessage(
@@ -353,11 +375,12 @@ public class CodingAgent {
             /*
              * Give the tool result back to Qwen.
              *
-             * We currently represent tool results as
-             * user messages because Qwen 2.5 Coder 7B
-             * is returning tool requests as JSON inside
-             * ordinary message content rather than
-             * Ollama native tool_calls.
+             * For now, tool results are represented
+             * as conversation messages containing the
+             * actual result.
+             *
+             * Tool selection itself uses Ollama's
+             * native tool-calling interface.
              */
             messages.add(
                     new ChatMessage(
@@ -378,6 +401,13 @@ public class CodingAgent {
                             - Follow the repository instructions from
                               AGENTS.md when they are present.
 
+                            - Use the provided tool-calling interface
+                              whenever another tool is required.
+
+                            - Do not write simulated tool calls, tool
+                              names, or tool arguments as ordinary
+                              response text.
+
                             - Do not assume that one unsuccessful search
                               means the requested code does not exist.
 
@@ -387,34 +417,43 @@ public class CodingAgent {
                             - If a search identified a relevant file,
                               inspect it with read_file when necessary.
 
-                            - If the original request asks for a code change,
-                              do not merely describe the change or show code
-                              that the user should manually copy.
+                            - For a read-only request, once you have
+                              sufficient repository evidence, provide
+                              the final answer without using unnecessary
+                              tools.
 
-                            - For a code-change request, use replace_text to
-                              actually modify the repository.
+                            - Do not use git_diff for a read-only request
+                              unless the user specifically asked about
+                              existing uncommitted changes.
+
+                            - If the original request asks for a code
+                              change, do not merely describe the change
+                              or show code that the user should manually
+                              copy.
+
+                            - For a code-change request, use replace_text
+                              to actually modify the repository.
 
                             - Before replace_text, make sure you know the
                               actual current contents of the target file.
 
-                            - If replace_text succeeds, inspect the actual
-                              modification using git_diff before finishing.
+                            - If replace_text succeeds during the current
+                              task, inspect the modification using
+                              git_diff before finishing.
 
                             - If replace_text fails, reconsider the exact
-                              replacement and use additional tools if needed.
-
-                            - A git_diff request must be:
-
-                              {"name":"git_diff","arguments":{}}
+                              replacement and use additional tools if
+                              needed.
 
                             - Do not claim a modification succeeded unless
                               the tool result confirms it.
 
                             - If the requested modification has been made
-                              and the Git diff has been inspected, provide
+                              and its Git diff has been inspected, provide
                               the final answer.
 
-                            - Otherwise request the next appropriate tool.
+                            - Otherwise use the next appropriate available
+                              tool.
                             """.formatted(
                                     call.name(),
                                     toolResult
