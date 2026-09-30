@@ -7,16 +7,16 @@ public class CodingAgent {
 
     private static final int MAX_STEPS = 10;
 
-    private final OllamaClient ollama;
+    private final ModelProvider modelProvider;
     private final ToolRegistry tools;
     private final String repositoryInstructions;
 
     public CodingAgent(
-            OllamaClient ollama,
+            ModelProvider modelProvider,
             ToolRegistry tools,
             String repositoryInstructions
     ) {
-        this.ollama = ollama;
+        this.modelProvider = modelProvider;
         this.tools = tools;
         this.repositoryInstructions =
                 repositoryInstructions;
@@ -308,7 +308,7 @@ public class CodingAgent {
              * Ask Qwen what it wants to do next.
              */
             AgentResponse response =
-                    ollama.chat(messages);
+                    modelProvider.chat(messages);
 
 
             /*

@@ -11,7 +11,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 
-public class OllamaClient {
+public class OllamaClient implements ModelProvider {
 
     private static final URI GENERATE_URI =
             URI.create(
@@ -103,6 +103,7 @@ if (response.statusCode() < 200
      * 1. request a tool, or
      * 2. return its final answer.
      */
+    @Override
     public AgentResponse chat(
             List<ChatMessage> messages
     )
