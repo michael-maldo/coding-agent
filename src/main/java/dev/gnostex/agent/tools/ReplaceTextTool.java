@@ -1,4 +1,6 @@
-package dev.gnostex.agent;
+package dev.gnostex.agent.tools;
+
+import dev.gnostex.agent.workspace.Workspace;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

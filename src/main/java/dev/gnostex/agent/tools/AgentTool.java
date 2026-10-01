@@ -1,4 +1,4 @@
-package dev.gnostex.agent;
+package dev.gnostex.agent.tools;
 
 public interface AgentTool {
 

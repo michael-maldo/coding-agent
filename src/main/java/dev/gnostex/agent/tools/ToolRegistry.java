@@ -1,4 +1,6 @@
-package dev.gnostex.agent;
+package dev.gnostex.agent.tools;
+
+import dev.gnostex.agent.core.ToolCall;
 
 import java.util.HashMap;
 import java.util.Map;

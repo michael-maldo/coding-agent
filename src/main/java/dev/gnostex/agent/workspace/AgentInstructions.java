@@ -1,4 +1,4 @@
-package dev.gnostex.agent;
+package dev.gnostex.agent.workspace;
 
 import java.io.IOException;
 import java.nio.file.Files;

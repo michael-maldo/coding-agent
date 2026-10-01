@@ -1,4 +1,6 @@
-package dev.gnostex.agent;
+package dev.gnostex.agent.tools;
+
+import dev.gnostex.agent.workspace.Workspace;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

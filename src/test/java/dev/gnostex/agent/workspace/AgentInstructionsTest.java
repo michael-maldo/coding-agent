@@ -1,4 +1,4 @@
-package dev.gnostex.agent;
+package dev.gnostex.agent.workspace;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

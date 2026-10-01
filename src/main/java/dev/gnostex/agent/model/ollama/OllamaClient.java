@@ -1,4 +1,8 @@
-package dev.gnostex.agent;
+package dev.gnostex.agent.model.ollama;
+import dev.gnostex.agent.core.AgentResponse;
+import dev.gnostex.agent.core.ChatMessage;
+import dev.gnostex.agent.core.ToolCall;
+import dev.gnostex.agent.model.ModelProvider;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

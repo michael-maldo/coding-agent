@@ -1,4 +1,7 @@
-package dev.gnostex.agent;
+package dev.gnostex.agent.core;
+
+import dev.gnostex.agent.model.ModelProvider;
+import dev.gnostex.agent.tools.ToolRegistry;
 
 import java.util.ArrayList;
 import java.util.List;

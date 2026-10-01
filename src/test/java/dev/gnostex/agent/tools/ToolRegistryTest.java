@@ -1,4 +1,7 @@
-package dev.gnostex.agent;
+package dev.gnostex.agent.tools;
+import dev.gnostex.agent.core.ToolCall;
+
+import dev.gnostex.agent.workspace.Workspace;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;

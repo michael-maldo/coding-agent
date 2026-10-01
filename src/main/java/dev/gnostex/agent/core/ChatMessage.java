@@ -1,4 +1,4 @@
-package dev.gnostex.agent;
+package dev.gnostex.agent.core;
 
 public record ChatMessage(
         String role,

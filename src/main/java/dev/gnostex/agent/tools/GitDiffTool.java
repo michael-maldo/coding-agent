@@ -1,32 +1,34 @@
-package dev.gnostex.agent;
+package dev.gnostex.agent.tools;
+
+import dev.gnostex.agent.workspace.Workspace;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
-public class SearchCodeTool implements AgentTool {
+public class GitDiffTool implements AgentTool {
 
     private final Workspace workspace;
 
-    public SearchCodeTool(Workspace workspace) {
+    public GitDiffTool(Workspace workspace) {
         this.workspace = workspace;
     }
 
     @Override
     public String name() {
-        return "search_code";
+        return "git_diff";
     }
 
     @Override
-    public String execute(String query) throws Exception {
+    public String execute(String ignored)
+            throws Exception {
 
         ProcessBuilder processBuilder =
                 new ProcessBuilder(
                         "git",
-                        "grep",
-                        "-n",
-                        "--",
-                        query
+                        "diff",
+                        "--no-ext-diff",
+                        "--"
                 );
 
         processBuilder.directory(
@@ -52,25 +54,29 @@ public class SearchCodeTool implements AgentTool {
             String line;
 
             while ((line = reader.readLine()) != null) {
+
                 output.append(line)
-                      .append(System.lineSeparator());
+                        .append(
+                                System.lineSeparator()
+                        );
             }
         }
 
         int exitCode =
                 process.waitFor();
 
-        if (exitCode == 1) {
-            return "No matches found.";
-        }
-
         if (exitCode != 0) {
+
             throw new IllegalStateException(
-                    "git grep failed with exit code "
+                    "git diff failed with exit code "
                             + exitCode
                             + ":\n"
                             + output
             );
+        }
+
+        if (output.isEmpty()) {
+            return "No changes.";
         }
 
         return output.toString();

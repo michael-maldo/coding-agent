@@ -1,4 +1,6 @@
-package dev.gnostex.agent;
+package dev.gnostex.agent.model;
+import dev.gnostex.agent.core.AgentResponse;
+import dev.gnostex.agent.core.ChatMessage;
 
 import java.util.List;
 

@@ -1,4 +1,14 @@
-package dev.gnostex.agent;
+package dev.gnostex.agent.app;
+
+import dev.gnostex.agent.core.CodingAgent;
+import dev.gnostex.agent.model.ollama.OllamaClient;
+import dev.gnostex.agent.tools.GitDiffTool;
+import dev.gnostex.agent.tools.ReadFileTool;
+import dev.gnostex.agent.tools.ReplaceTextTool;
+import dev.gnostex.agent.tools.SearchCodeTool;
+import dev.gnostex.agent.tools.ToolRegistry;
+import dev.gnostex.agent.workspace.AgentInstructions;
+import dev.gnostex.agent.workspace.Workspace;
 
 import java.nio.file.Path;
 import java.util.Scanner;
